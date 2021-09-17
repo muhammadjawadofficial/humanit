@@ -43,7 +43,10 @@
           <a class="cart">
             <span class="price">${{ caseInfo.price }}</span>
             <span class="add-to-cart">
-              <span class="txt">Add in cart</span>
+              <span class="txt" v-if="quantityAvailable(caseInfo)"
+                >Add to cart</span
+              >
+              <span class="txt" v-else>Sold Out</span>
             </span>
           </a>
         </div>
@@ -80,6 +83,15 @@ export default {
     this.initializeBreadcrumb();
   },
   methods: {
+    popMessage(type, title, text) {
+      this.$notify({
+        title: title,
+        type: type,
+        text: text,
+        duration: 2000,
+        speed: 400,
+      });
+    },
     routeChangeHandler(val) {
       this.fetchCases(val.phoneId);
       if (!val.phoneId) {
@@ -111,33 +123,38 @@ export default {
       });
     },
     ...mapActions(["addToCart", "fetchCases"]),
+    quantityAvailable(caseInfo) {
+      let phoneId = this.$route.params.phoneId;
+      if (!phoneId) {
+        return true;
+      }
+      let findCase = caseInfo.phoneCases.find((x) => x.phoneInfo.id == phoneId);
+      return findCase && findCase.quantity > 0;
+    },
+    getCaseFromCart(id) {
+      return this.getCartDetails.find((x) => id == x.phoneId);
+    },
+    findCaseInfo(info, id) {
+      return info.phoneCases.find((x) => x.phoneInfo.id == id);
+    },
     addProductToCart(caseInfo) {
       let phoneId = this.$route.params.phoneId;
       if (phoneId) {
-        let quantity = caseInfo.phoneCases.find(
-          (x) => x.phoneInfo.id == phoneId
-        ).quantity;
-        console.log("total quantity is : ", quantity);
-        this.addToCart({
-          data: caseInfo,
-          phoneId: phoneId,
-        });
+        let caseFromCart = this.getCaseFromCart(phoneId);
+        let quantity = this.findCaseInfo(caseInfo, phoneId).quantity;
+        let isNotOutOfStock = !caseFromCart || caseFromCart.quantity < quantity;
 
-        this.$notify({
-          title: "Success!",
-          type: "success",
-          text: "Added to Cart!",
-          duration: 2000,
-          speed: 400,
-        });
+        if (quantity > 0 && isNotOutOfStock) {
+          this.addToCart({
+            data: caseInfo,
+            phoneId: phoneId,
+          });
+          this.popMessage("success", "Success!", "Added to Cart!");
+        } else {
+          this.popMessage("error", "Failure!", "Out of Stock!");
+        }
       } else {
-        this.$notify({
-          title: "Failure!",
-          type: "error",
-          text: "Select a model first!",
-          duration: 2000,
-          speed: 400,
-        });
+        this.popMessage("error", "Failure!", "Select a model first!");
       }
     },
     routeToCase(caseInfo) {

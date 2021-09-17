@@ -210,6 +210,7 @@ export default {
 
 .prices {
   height: 100%;
+  width: 10%;
   text-align: right;
 }
 .amount {

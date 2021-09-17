@@ -132,28 +132,37 @@ export default {
   },
   methods: {
     ...mapActions(["addToCart"]),
-    addProductToCart() {
-      if (!this.selectedPhone || !this.selectedPhone.phoneId) {
-        this.$notify({
-          title: "Failure!",
-          type: "error",
-          text: "Select a model first!",
-          duration: 2000,
-          speed: 400,
-        });
-        return;
-      }
-      this.addToCart({
-        data: this.caseDetails,
-        phoneId: this.selectedPhone.phoneId,
-      });
+    getCaseFromCart(id) {
+      return this.getCartDetails.find((x) => id == x.phoneId);
+    },
+    popMessage(type, title, text) {
       this.$notify({
-        title: "Success!",
-        type: "success",
-        text: "Added to Cart!",
+        title: title,
+        type: type,
+        text: text,
         duration: 2000,
         speed: 400,
       });
+    },
+    addProductToCart() {
+      if (!this.selectedPhone || !this.selectedPhone.phoneId) {
+        this.popMessage("error", "Failure!", "Select a model first!");
+        return;
+      }
+      let caseFromCart = this.getCaseFromCart(this.selectedPhone.phoneId);
+      let totalQuantity = this.selectedPhone.quantity;
+      let isNotOutOfStock =
+        !caseFromCart || caseFromCart.quantity < totalQuantity;
+
+      if (totalQuantity > 0 && isNotOutOfStock) {
+        this.addToCart({
+          data: this.caseDetails,
+          phoneId: this.selectedPhone.phoneId,
+        });
+        this.popMessage("success", "Success!", "Added to Cart!");
+      } else {
+        this.popMessage("error", "Failure!", "Out of Stock!");
+      }
     },
   },
 };
